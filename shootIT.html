@@ -1,0 +1,196 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+	<style>
+	  body {
+		margin: 0px;
+		padding: 0px;
+	  }
+
+	  #main-canvas{
+		  display: block;
+		  margin: auto;
+	  }
+
+      #shoot-button-div {
+          text-align: center;
+      }
+      #score {
+          text-align: center;
+      }
+	</style>
+  </head>
+  <body>
+    <div id="main-canvas-div">
+		<canvas id="main-canvas"></canvas>
+  	</div>
+    <div id="shoot-button-div">
+        <button id="shoot-button" onclick="addShootScore()">SHOOT</button>
+		<p id="score">Score: </p>
+		<p id=Hit>Hits: </p>
+		<p id="Miss">Missed	: </p>
+        <p> Hint: for higher score hit when the smaller circle turns green!<br>Happy Shooting Guys!</p>
+    </div>
+
+	<script>
+
+      window.requestAnimFrame = (function(callback) {
+		return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||
+		function(callback) {
+		  window.setTimeout(callback, 1000 / 120);
+		};
+	  })();
+
+	  var finalScore = 0;
+	  var hit = 0;
+	  var miss = 0;
+      var score = {
+          faul: -20,
+          low: 10,
+          mid: 50,
+          high: 100
+      }
+
+      function addShootScore(){
+        hitScore = noteScore();
+        console.log(hitScore);
+        finalScore += hitScore;
+        document.getElementById("score").innerHTML = "Score: " + finalScore;
+      }
+
+      function noteScore() {
+          if(isNoteInHitArea()){
+              if (isNoteInCenter()) {
+                  _score =  score.high;
+              }
+              else {
+                  _score =  score.low;
+              }
+          }
+
+          else {
+              _score =  score.faul;
+          }
+
+          return _score;
+
+      }
+
+      function isNoteInHitArea() {
+          hitAreaCicleLeftEdge =  hitAreaCicle.x - hitAreaCicle.radius;
+          hitAreaCicleRightEdge = hitAreaCicle.x + hitAreaCicle.radius;
+          console.log(hitAreaCicleLeftEdge, hitAreaCicleRightEdge);
+          if (noteCircle.x >= hitAreaCicleLeftEdge && noteCircle.x <= hitAreaCicleRightEdge){
+            //   console.log("in circle");
+              return true;
+          }
+          else {
+              return false;
+          }
+      }
+
+      function isNoteInCenter() {
+          if (noteCircle.x >= hitAreaCicle.x - 50 && noteCircle.x <= hitAreaCicle.x + 50){
+              console.log("in perfect score");
+              return true;
+          }
+
+          else {
+              return false;
+          }
+      }
+
+	  function draw(noteCircle, hitAreaCicle, context) {
+		// animating noteCircle
+		context.beginPath();
+		context.arc(noteCircle.x, noteCircle.y, noteCircle.radius, noteCircle.startAngle, noteCircle.endAngle);
+		context.lineWidth = noteCircle.borderWidth;
+        if (noteCircle.x >= hitAreaCicle.x - 50 && noteCircle.x <= hitAreaCicle.x + 50){
+                context.strokeStyle = 'green';
+        }
+        else {
+                context.strokeStyle = 'red';
+        }
+		context.stroke();
+
+		//static hitAreaCircle
+		context.beginPath();
+		context.arc(hitAreaCicle.x, hitAreaCicle.y, hitAreaCicle.radius, hitAreaCicle.startAngle, hitAreaCicle.endAngle);
+		context.lineWidth = hitAreaCicle.borderWidth;
+		context.strokeStyle = 'blue';
+		context.stroke();
+	  }
+
+	  function animate(noteCircle, hitAreaCicle, canvas, context, startTime) {
+			// update
+			var time = (new Date()).getTime() - startTime;
+			var newX = noteCircle.x;
+			if (newX < canvas.width + noteCircle.radius + 2*noteCircle.borderWidth) {
+				newX = noteCircle.linearSpeed * time / 1000;
+				noteCircle.x = parseInt(newX);
+			}
+
+
+            // clear canvas before drawing
+			context.clearRect(0, 0, canvas.width, canvas.height);
+
+            // draw
+			draw(noteCircle, hitAreaCicle, context);
+
+            // request new frame
+			if (noteCircle.x < canvas.width + noteCircle.radius + 2*noteCircle.borderWidth ){
+				requestAnimFrame(function() {
+					animate(noteCircle, hitAreaCicle, canvas, context, startTime);
+				});
+			}
+
+            // infinite loop <---->
+			else {
+				noteCircle.x = 0;
+				if (noteCircle.linearSpeed <= 600){
+	                		noteCircle.linearSpeed += 30;				
+				}
+				// if (noteCircle.radius*2 < (canvas.height - noteCircle.borderWidth*4)){noteCircle.radius += 1;}
+				var startTime = (new Date()).getTime();
+				console.log(noteCircle, startTime);
+				requestAnimFrame(function() {
+					animate(noteCircle, hitAreaCicle, canvas, context, startTime);
+				});
+			}
+	 }
+
+	  var canvas = document.getElementById('main-canvas');
+	  canvas.height = window.innerHeight * 0.8; // 80 percent of the window height
+	  canvas.width = window.innerWidth * 0.8; // 80 percent of the window width
+	  var context = canvas.getContext('2d');
+
+      // make generic -- #hardCodedValues
+      var hitAreaCicle = {
+		  x: canvas.width - 100,
+		  y: canvas.height - 200,
+		  startAngle: 0,
+		  endAngle: Math.PI*2,
+		  radius:100,
+		  borderWidth: 5
+	  };
+
+      //   make generic -- #hardCodedValues
+	  var noteCircle = {
+		  x: -300,
+		  y: canvas.height - 200,
+		  startAngle: 0,
+		  endAngle: Math.PI * 2,
+		  radius:50,
+		  borderWidth: 5,
+          linearSpeed: 200
+	  };
+
+	  // draw(noteCircle, hitAreaCicle, context);
+	  // wait one second before starting animation
+	  setTimeout(function() {
+		var startTime = (new Date()).getTime();
+		animate(noteCircle, hitAreaCicle, canvas, context, startTime);
+	}, 100);
+	</script>
+  </body>
+</html>
